@@ -29,10 +29,11 @@ api.interceptors.response.use(
       try {
         await api.post("/auth/refresh-token");
         return api(originalRequest);
-      } catch (err) {
+      } catch {
         localStorage.removeItem("authToken");
         localStorage.removeItem("authRole");
-        window.location.href = "/waiter/login";
+        localStorage.removeItem("role");
+        window.location.href = "/login";
       }
     }
 

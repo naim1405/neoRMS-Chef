@@ -6,9 +6,9 @@ const baseClasses =
 const variantClasses = {
   default: "bg-[#C3110C] text-white hover:bg-[#E6501B]",
   outline:
-    "border border-[#C3110C] bg-white text-[#C3110C] hover:bg-[#FDE2D3]",
+    "border border-[#C3110C] bg-white text-[#C3110C] hover:bg-[#E6501B] hover:text-white hover:border-[#E6501B]",
   ghost:
-    "bg-transparent text-[#C3110C] hover:bg-[#FDE2D3]",
+    "bg-transparent text-[#C3110C] hover:bg-[#E6501B] hover:text-white",
 };
 
 const sizeClasses = {

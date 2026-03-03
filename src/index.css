@@ -47,7 +47,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #e03a2f;
+  background-color: #c06d6daa;
   color: #ffffff;
   cursor: pointer;
   transition: border-color 0.25s;
@@ -65,6 +65,17 @@ svg {
   stroke: currentColor;
   stroke-width: 2;
   overflow: visible;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @media (prefers-color-scheme: light) {

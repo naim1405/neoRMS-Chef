@@ -1,21 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./pages/waiter/Dashboard.jsx";
-import CreateOrder from "./pages/waiter/CreateOrder.jsx";
-import ActiveOrders from "./pages/waiter/ActiveOrders.jsx";
-import Billing from "./pages/waiter/Billing.jsx";
-import OrderConfirmation from "./pages/waiter/OrderConfirmation.jsx";
-import Profile from "./pages/waiter/Profile.jsx";
-import WaiterLogin from "./pages/auth/Login.jsx";
-import RequireWaiterAuth from "./components/routing/RequireWaiterAuth.jsx";
-import WaiterShell from "./components/layout/WaiterShell.jsx";
+import Login from "./pages/auth/Login.jsx";
+import RequireChefAuth from "./components/routing/RequireChefAuth.jsx";
+import ChefShell from "./components/layout/ChefShell.jsx";
+import OrdersBoard from "./pages/chef/OrdersBoard.jsx";
+import ChefProfile from "./pages/chef/ChefProfile.jsx";
+import { OrdersProvider } from "./context/OrdersContext.jsx";
 
 function HomeRedirect() {
   const token = localStorage.getItem("authToken");
   const role = localStorage.getItem("authRole");
-  const isWaiter = !role || role === "WAITER";
+  const isChef = !role || role === "CHEF";
   return (
     <Navigate
-      to={token && isWaiter ? "/waiter/dashboard" : "/waiter/login"}
+      to={token && isChef ? "/chef/dashboard" : "/chef/login"}
       replace
     />
   );
@@ -23,26 +20,21 @@ function HomeRedirect() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomeRedirect />} />
-      <Route path="/waiter/login" element={<WaiterLogin />} />
+    <OrdersProvider>
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/chef/login" element={<Login />} />
 
-      <Route element={<RequireWaiterAuth />}>
-        <Route element={<WaiterShell />}>
-          <Route path="/waiter/dashboard" element={<Dashboard />} />
-          <Route path="/waiter/create-order" element={<CreateOrder />} />
-          <Route path="/waiter/orders" element={<ActiveOrders />} />
-          <Route path="/waiter/billing/:id" element={<Billing />} />
-          <Route
-            path="/waiter/order-confirmation"
-            element={<OrderConfirmation />}
-          />
-          <Route path="/waiter/profile" element={<Profile />} />
+        <Route element={<RequireChefAuth />}>
+          <Route element={<ChefShell />}>
+            <Route path="/chef/dashboard" element={<OrdersBoard />} />
+            <Route path="/chef/profile" element={<ChefProfile />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </OrdersProvider>
   );
 }
 

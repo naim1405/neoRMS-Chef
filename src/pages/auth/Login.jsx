@@ -1,12 +1,12 @@
+// src/pages/login/ManagementLogin.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/services/api";
-import AuthCard from "../../components/auth/AuthCard"; 
-import AuthForm from "../../components/auth/AuthForm";
+import AuthCard from "../../components/auth/AuthCard"
+import AuthForm from "../../components/auth/AuthForm"
+import { loginManagement } from "@/services/auth"; 
 
-export default function WaiterLogin() {
+export default function ManagementLogin() {
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,23 +15,18 @@ export default function WaiterLogin() {
     setError("");
 
     try {
-      const response = await api.post("/auth/login/waiter", { email, password });
-      console.log("Login successful:", response);
+      const { accessToken, user } = await loginManagement({ email, password });
 
-      const { accessToken, user } = response.data?.data ?? {};
-
-      if (!accessToken || !user?.role) throw new Error("Invalid response from server");
-
+      // Save to localStorage
       localStorage.setItem("authToken", accessToken);
       localStorage.setItem("authRole", user.role);
       localStorage.setItem("role", String(user.role).toLowerCase());
-      const name = user?.fullName || user?.name || user?.username || "Waiter";
-      localStorage.setItem("userName", name);
-      // also set waiterName for navbar convenience
-      localStorage.setItem("waiterName", name);
+      if (user?.fullName || user?.name) {
+        localStorage.setItem("userName", user.fullName || user.name);
+      }
 
-      // go to waiter dashboard after successful login
-      navigate("/waiter/dashboard", { replace: true });
+      // Navigate after successful login
+      navigate("/admin", { replace: true });
     } catch (e) {
       setError(e?.response?.data?.message || e.message || "Login failed");
     } finally {
