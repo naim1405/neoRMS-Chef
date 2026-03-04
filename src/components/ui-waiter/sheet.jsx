@@ -50,7 +50,7 @@ export function SheetContent({ side = "left", className = "", children }) {
         onClick={() => ctx.setOpen(false)}
       />
       <div
-        className={`relative h-full w-64 bg-white shadow-xl border-r border-neutral-200 p-4 ${sideClasses} ${className}`}
+        className={`relative h-full w-64 bg-white shadow-xl border-r border-[#FFB3B3] p-4 ${sideClasses} ${className}`}
       >
         {children}
       </div>
@@ -67,7 +67,7 @@ export function SheetHeader({ className = "", ...props }) {
 export function SheetTitle({ className = "", ...props }) {
   return (
     <h2
-      className={`text-lg font-semibold text-neutral-900 ${className}`}
+      className={`text-lg font-semibold text-[#2C2C2C] ${className}`}
       {...props}
     />
   );

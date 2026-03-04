@@ -8,6 +8,8 @@ import React, {
 import socketio from "socket.io-client";
 import { SOCKET_URL, ChefSocketEventEnum } from "../constants";
 import { useAuth } from "./AuthContext";
+import { useOrders } from "./OrdersContext";
+import { getOrder } from "../services/order";
 
 const SocketContext = createContext<{
   socket: ReturnType<typeof socketio> | null;
@@ -22,7 +24,8 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { token, tenantId } = useAuth();
+  const { token, tenantId, user } = useAuth();
+  const { addOrder, updateOrderStatus, removeOrder } = useOrders();
   const socketRef = useRef<ReturnType<typeof socketio> | null>(null);
   const [socket, setSocket] = useState<ReturnType<typeof socketio> | null>(
     null,
@@ -50,88 +53,114 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       extraHeaders: {
         "x-tenant-id": tenantId ?? "",
       },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10,
     });
 
     socketRef.current = s;
 
-    // Fix #3: resolve connected state only once the handshake completes
+    // Connection established
     s.on("connect", () => {
+      console.log("[Socket] Connected to server");
       setSocket(s);
       setConnected(true);
     });
 
     s.on("disconnect", () => {
+      console.log("[Socket] Disconnected from server");
       setConnected(false);
     });
 
     s.on("connect_error", (err) => {
-      console.error("[Socket] connection error:", err.message);
+      console.error("[Socket] Connection error:", err.message);
     });
 
+    // Socket error handler
     s.on(ChefSocketEventEnum.SOCKET_ERROR_EVENT, (data) => {
-      console.log("[Socket] SOCKET_ERROR_EVENT data:", data);
-      alert(
-        "⚠️ Socket error event received.\n\n" +
-        "Check the console for the data payload.\n\n" +
-        "👉 Write the handler in:\n" +
-        "src/context/SocketContext.tsx → SOCKET_ERROR_EVENT listener"
-      );
+      console.error("[Socket] SOCKET_ERROR_EVENT:", data);
     });
 
-    s.on(ChefSocketEventEnum.ORDER_PLACED_EVENT, (data) => {
-      console.log("[Socket] ORDER_PLACED_EVENT data:", data);
-      alert(
-        "🆕 New order placed event received.\n\n" +
-        "Server sends only the order ID. Check the console for the raw payload.\n\n" +
-        "👉 Write the handler in:\n" +
-        "src/context/SocketContext.tsx → ORDER_PLACED_EVENT listener\n\n" +
-        "Steps:\n" +
-        "1. Extract the order ID from data\n" +
-        "2. Fetch the full order from the API using that ID\n" +
-        "3. Call addOrder(fullOrder) from useOrders()"
-      );
+    // NEW ORDER PLACED - Fetch full order and add to dashboard
+    s.on(ChefSocketEventEnum.ORDER_PLACED_EVENT, async (data) => {
+      try {
+        console.log("[Socket] ORDER_PLACED_EVENT received:", data);
+        
+        const orderId = data?.orderId || data?.id;
+        if (!orderId) {
+          console.error("[Socket] No orderId in ORDER_PLACED_EVENT");
+          return;
+        }
+
+        // Fetch the full order from API
+        const fullOrder = await getOrder(orderId);
+        console.log("[Socket] Full order fetched:", fullOrder);
+
+        // Add to orders dashboard
+        addOrder(fullOrder);
+      } catch (error) {
+        console.error("[Socket] Failed to process ORDER_PLACED_EVENT:", error);
+      }
     });
 
-    s.on(ChefSocketEventEnum.ORDER_IN_PROGRESS_EVENT, (data) => {
-      console.log("[Socket] ORDER_IN_PROGRESS_EVENT data:", data);
-      alert(
-        "🔄 Order in progress event received.\n\n" +
-        "Server sends: { orderId, chefId } — the order ID and the chef who accepted it.\n" +
-        "Check the console for the raw payload.\n\n" +
-        "👉 Write the handler in:\n" +
-        "src/context/SocketContext.tsx → ORDER_IN_PROGRESS_EVENT listener\n\n" +
-        "Context: multiple chefs may see the same order. When one accepts it,\n" +
-        "all others should have it removed from their dashboard.\n\n" +
-        "Steps:\n" +
-        "1. Get the current chef's ID from AuthContext\n" +
-        "2. If data.chefId === currentChefId → this chef accepted it, update status to 'cooking'\n" +
-        "3. If data.chefId !== currentChefId → another chef took it, remove it from this dashboard\n" +
-        "   Hint: you'll need a removeOrder(orderId) function in OrdersContext"
-      );
+    // ORDER IN PROGRESS - Check if current chef or another chef accepted it
+    s.on(ChefSocketEventEnum.ORDER_IN_PROGRESS_EVENT, async (data) => {
+      try {
+        console.log("[Socket] ORDER_IN_PROGRESS_EVENT received:", data);
+        
+        const orderId = data?.orderId || data?.id;
+        const chefWhoAcceptedId = data?.chefId;
+
+        if (!orderId || !chefWhoAcceptedId) {
+          console.error("[Socket] Missing orderId or chefId in ORDER_IN_PROGRESS_EVENT");
+          return;
+        }
+
+        const currentChefId = user?.id || localStorage.getItem("chefId");
+
+        // This chef accepted the order
+        if (chefWhoAcceptedId === currentChefId) {
+          console.log("[Socket] Current chef accepted the order:", orderId);
+          updateOrderStatus(orderId, "cooking");
+        } 
+        // Another chef accepted the order
+        else {
+          console.log("[Socket] Another chef accepted this order, removing from dashboard:", orderId);
+          removeOrder(orderId);
+        }
+      } catch (error) {
+        console.error("[Socket] Failed to process ORDER_IN_PROGRESS_EVENT:", error);
+      }
     });
 
+    // ORDER CANCELLED - Remove or update the order
     s.on(ChefSocketEventEnum.ORDER_CANCELLED_EVENT, (data) => {
-      console.log("[Socket] ORDER_CANCELLED_EVENT data:", data);
-      alert(
-        "❌ Order cancelled event received.\n\n" +
-        "Server sends only the order ID. Check the console for the raw payload.\n\n" +
-        "👉 Write the handler in:\n" +
-        "src/context/SocketContext.tsx → ORDER_CANCELLED_EVENT listener\n\n" +
-        "Steps:\n" +
-        "1. Extract the order ID from data\n" +
-        "2. Call updateOrderStatus(orderId, 'cancelled') from useOrders()\n" +
-        "   (No need to fetch full order — ID is enough to update status)"
-      );
+      try {
+        console.log("[Socket] ORDER_CANCELLED_EVENT received:", data);
+        
+        const orderId = data?.orderId || data?.id;
+        if (!orderId) {
+          console.error("[Socket] No orderId in ORDER_CANCELLED_EVENT");
+          return;
+        }
+
+        // Update status to cancelled
+        updateOrderStatus(orderId, "cancelled");
+        console.log("[Socket] Order marked as cancelled:", orderId);
+      } catch (error) {
+        console.error("[Socket] Failed to process ORDER_CANCELLED_EVENT:", error);
+      }
     });
 
-    // Fix #2: disconnect and clean up when this effect re-runs or component unmounts
+    // Cleanup on unmount or token change
     return () => {
       s.disconnect();
       socketRef.current = null;
       setSocket(null);
       setConnected(false);
     };
-  }, [token]); // Fix #5: re-runs automatically when token changes (login/logout)
+  }, [token, tenantId, user, addOrder, updateOrderStatus, removeOrder]);
 
   return (
     <SocketContext.Provider value={{ socket, connected }}>
@@ -139,3 +168,4 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     </SocketContext.Provider>
   );
 };
+

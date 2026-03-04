@@ -16,22 +16,25 @@ export function AuthProvider({ children }) {
   const [restaurantId, setRestaurantId] = useState(() => localStorage.getItem("restaurantId"));
   const [user, setUser] = useState(() => {
     const name = localStorage.getItem("userName");
-    return name ? { fullName: name } : null;
+    const id = localStorage.getItem("userId");
+    return (name || id) ? { fullName: name, id } : null;
   });
 
   // Register the token setter so the api interceptor can reach it
   _setToken = setToken;
 
-  const login = (accessToken, userRole, userName, tenantId, restaurantId) => {
+  const login = (accessToken, userRole, userName, tenantId, restaurantId, userId) => {
     localStorage.setItem("authToken", accessToken);
     localStorage.setItem("authRole", userRole);
     if (userName) localStorage.setItem("userName", userName);
     if (tenantId) localStorage.setItem("tenantId", tenantId);
     if (restaurantId) localStorage.setItem("restaurantId", restaurantId);
+    if (userId) localStorage.setItem("userId", userId);
     setToken(accessToken);
     setRole(userRole);
     setTenantId(tenantId ?? null);
     setRestaurantId(restaurantId ?? null);
+    setUser({ fullName: userName, id: userId });
   };
 
   const logout = () => {
@@ -42,6 +45,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("chefName");
     localStorage.removeItem("tenantId");
     localStorage.removeItem("restaurantId");
+    localStorage.removeItem("userId");
     setToken(null);
     setRole(null);
     setTenantId(null);
@@ -51,7 +55,8 @@ export function AuthProvider({ children }) {
 
   const updateUser = (userData) => {
     if (userData?.fullName) localStorage.setItem("userName", userData.fullName);
-    setUser(userData);
+    if (userData?.id) localStorage.setItem("userId", userData.id);
+    setUser((prev) => ({ ...prev, ...userData }));
   };
 
   return (

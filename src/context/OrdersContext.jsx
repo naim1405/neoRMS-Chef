@@ -68,12 +68,17 @@ export function OrdersProvider({ children }) {
     );
   }, []);
 
+  const removeOrder = useCallback((orderId) => {
+    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+  }, []);
+
   const value = {
     orders,
     updateOrderStatus,
     setOrderInventoryError,
     addOrder,
     clearManualAdjustment,
+    removeOrder,
   };
 
   return (

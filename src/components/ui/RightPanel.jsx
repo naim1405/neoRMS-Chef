@@ -24,14 +24,14 @@ export function RightPanel({ open, onClose, title, children }) {
         aria-hidden="true"
       />
       <aside
-        className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl border-l border-neutral-200 flex flex-col z-50"
+        className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl border-l border-[#FFB3B3] flex flex-col z-50"
         style={{ animation: "slideInRight 0.3s ease-out" }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="right-panel-title"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 shrink-0">
-          <h2 id="right-panel-title" className="text-lg font-semibold text-neutral-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#FFB3B3] shrink-0">
+          <h2 id="right-panel-title" className="text-lg font-semibold text-[#2C2C2C]">
             {title}
           </h2>
           <Button

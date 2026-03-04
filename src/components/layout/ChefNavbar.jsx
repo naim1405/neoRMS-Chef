@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, User, LogOut, Menu } from "lucide-react";
 import { Button } from "../ui-waiter/button.jsx";
@@ -11,6 +11,7 @@ import {
   SheetClose,
 } from "../ui-waiter/sheet.jsx";
 import { useAuth } from "../../context/AuthContext";
+import { getRestaurant } from "../../services/order";
 
 const navItems = [
   { label: "Orders Board", to: "/dashboard", icon: LayoutDashboard },
@@ -21,147 +22,198 @@ function ChefNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const [restaurantName, setRestaurantName] = useState("Chef Portal");
+  const [logoLoading, setLogoLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   const chefName =
     localStorage.getItem("chefName") ||
     localStorage.getItem("userName") ||
     "Chef";
   const avatarLetter = chefName.charAt(0).toUpperCase();
 
-  const isNavItemActive = (to) => location.pathname === to;
+  // 🔥 Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const handleLogoClick = () => {
-    navigate("/dashboard");
-  };
+  // 🔥 Fetch restaurant info
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      const restaurantId = localStorage.getItem("restaurantId");
+      if (!restaurantId) {
+        setRestaurantName("Chef Portal");
+        return;
+      }
+      try {
+        const data = await getRestaurant(restaurantId);
+        if (data?.name) setRestaurantName(data.name);
+      } catch (error) {
+        console.error("Failed to fetch restaurant:", error);
+      } finally {
+        setLogoLoading(false);
+      }
+    };
+    fetchRestaurant();
+  }, []);
+
+  const isNavItemActive = (to) => location.pathname === to;
 
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
   };
 
-  const SidebarContent = ({ useSheetClose = false }) => (
-    <nav className="flex flex-col gap-1 p-4">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = isNavItemActive(item.to);
-        const linkEl = (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={[
-              "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-white text-[#C3110C] [&_svg]:text-[#C3110C] [&_span]:text-[#C3110C]"
-                : "text-white hover:bg-[#E6501B] [&_svg]:text-white [&_span]:text-white",
-            ].join(" ")}
-          >
-            <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-[#C3110C]" : "text-white"}`} />
-            <span className={isActive ? "text-[#C3110C]" : "text-white"}>{item.label}</span>
-          </Link>
-        );
-        return useSheetClose ? (
-          <SheetClose asChild key={item.to}>
-            {linkEl}
-          </SheetClose>
-        ) : (
-          <div key={item.to}>{linkEl}</div>
-        );
-      })}
-    </nav>
-  );
+  const linkClasses = (isActive) =>
+    [
+      "group flex items-center gap-3 px-4 py-2 transition-colors",
+      isActive
+        ? "bg-white text-[#FF4D4F]"
+        : "text-white hover:bg-[#FF7F7F] hover:text-white",
+    ].join(" ");
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-64 md:z-40 bg-[#C3110C] shadow-md border-r border-[#C3110C]">
-        <button
-          type="button"
-          onClick={handleLogoClick}
-          className="flex items-center gap-3 px-4 py-4 text-left w-full border-b border-white/20 !bg-transparent border-0 hover:!bg-transparent focus:!bg-transparent"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#C3110C] overflow-hidden">
-            <span className="text-[9px] font-extrabold tracking-tight text-white leading-none select-none text-center">
-              neo
-              <br />
-              RMS
-            </span>
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-[#FF4D4F] text-white">
+        <div className="flex flex-col border-b border-[#FF7F7F]/40 px-4 py-6">
+          {/* Logo and Restaurant Name */}
+          <div className="flex flex-col items-center justify-center text-center mb-4">
+            {logoLoading ? (
+              <div className="h-8 w-8 animate-pulse bg-white rounded-full mb-2" />
+            ) : (
+              <div className="mb-2" />
+            )}
+            <p className="text-lg font-semibold break-words">{restaurantName}</p>
+            <p className="text-xs text-white/80 mt-1">Chef Portal</p>
           </div>
-          <span className="text-sm font-semibold text-white">
-            Chef Panel
-          </span>
-        </button>
-        <SidebarContent useSheetClose={false} />
-        <div className="mt-auto p-4 border-t border-white/20 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#C3110C]">
+
+          {/* Time and Date Display */}
+          <div className="flex flex-col items-center justify-center bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+            <p className="text-2xl font-bold text-white tracking-tight">
+              {currentTime.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+              })}
+            </p>
+            <p className="text-xs text-white/90 mt-1 font-medium">
+              {currentTime.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+        </div>
+
+        <nav className="flex-1 flex flex-col mt-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isNavItemActive(item.to);
+            return (
+              <Link key={item.to} to={item.to} className={linkClasses(active)}>
+                <Icon className={`h-5 w-5 flex-shrink-0 ${active ? "text-[#FF4D4F]" : "text-white"}`} />
+                <span className={active ? "text-[#FF4D4F]" : "text-white"}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-[#FF7F7F]/40">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-white text-[#FF4D4F] font-semibold">
               {avatarLetter}
             </div>
-            <span className="truncate text-sm text-white">{chefName}</span>
+            <span className="truncate text-sm">{chefName}</span>
           </div>
+
           <button
-            type="button"
+            onClick={() => navigate("/profile")}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-br from-[#FF4D4F] to-[#FF7F7F] text-white transform active:scale-95 active:opacity-80"
+          >
+            <User className="h-4 w-4" />
+            Profile
+          </button>
+
+          <button
             onClick={handleLogout}
-            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg text-white hover:bg-[#E6501B] transition-colors"
-            aria-label="Logout"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-br from-[#FF4D4F] to-[#FF7F7F] text-white transform active:scale-95 active:opacity-80 mt-2"
+            title="Logout"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <header className="fixed inset-x-0 top-0 z-40 h-16 bg-[#C3110C] shadow-md border-b border-[#C3110C] md:hidden">
-        <div className="flex h-full items-center justify-between px-4">
-          <button
-            type="button"
-            onClick={handleLogoClick}
-            className="flex items-center gap-2 !bg-transparent border-0 hover:!bg-transparent focus:!bg-transparent"
-          >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#C3110C] overflow-hidden">
-              <span className="text-[8px] font-extrabold text-white">
-                neo
-              </span>
+      {/* Mobile sidebar */}
+      <div className="md:hidden fixed top-2 left-2">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full border-white bg-white text-[#FF4D4F] hover:bg-[#FF7F7F]"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </SheetTrigger>
+
+          <SheetContent side="left" className="border-r border-[#FF4D4F]">
+            <SheetHeader>
+              <SheetTitle>{restaurantName}</SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-2 flex flex-col gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isNavItemActive(item.to);
+                return (
+                  <SheetClose asChild key={item.to}>
+                    <Link
+                      to={item.to}
+                      className={linkClasses(active)}
+                    >
+                      <Icon className={`h-4 w-4 flex-shrink-0 ${active ? "text-[#FF4D4F]" : "text-white"}`} />
+                      <span className={active ? "text-[#FF4D4F]" : "text-white"}>{item.label}</span>
+                    </Link>
+                  </SheetClose>
+                );
+              })}
             </div>
-            <span className="text-sm font-semibold text-white">
-              Chef Panel
-            </span>
-          </button>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full border-white bg-white/10 text-white hover:bg-[#E6501B] hover:border-[#E6501B]"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="border-r border-[#C3110C] bg-[#C3110C] flex flex-col">
-              <SheetHeader>
-                <SheetTitle className="text-white">Chef Navigation</SheetTitle>
-              </SheetHeader>
-              <div className="mt-4 flex-1">
-                <SidebarContent useSheetClose />
-              </div>
-              <div className="pt-4 mt-auto border-t border-white/20 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-[#C3110C]">
-                    {avatarLetter}
-                  </div>
-                  <span className="truncate text-sm text-white">{chefName}</span>
+
+            <div className="p-4 border-t border-[#FF7F7F]/40">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 flex items-center justify-center rounded-full bg-white text-[#FF4D4F] font-semibold">
+                  {avatarLetter}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg text-white hover:bg-[#E6501B] transition-colors"
-                  aria-label="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
+                <span className="truncate text-sm">{chefName}</span>
               </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </header>
+
+              <button
+                onClick={() => navigate("/profile")}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-br from-[#FF4D4F] to-[#FF7F7F] text-white transform active:scale-95 active:opacity-80"
+              >
+                <User className="h-4 w-4" />
+                Profile
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-br from-[#FF4D4F] to-[#FF7F7F] text-white transform active:scale-95 active:opacity-80 mt-2"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
     </>
   );
 }

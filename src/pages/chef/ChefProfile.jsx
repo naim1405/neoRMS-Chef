@@ -1,6 +1,5 @@
-import React, { useMemo, useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useOrders } from "../../context/OrdersContext";
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Camera } from "lucide-react";
 import { Button } from "../../components/ui-waiter/button";
 import { Input } from "../../components/ui-waiter/input";
 import { Label } from "../../components/ui-waiter/label";
@@ -51,7 +50,6 @@ function extractProfileData(res) {
 }
 
 export default function ChefProfile() {
-  const { orders } = useOrders();
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
@@ -81,8 +79,9 @@ export default function ChefProfile() {
   }, []);
 
   const [saveMessage, setSaveMessage] = useState("");
-  const [statsPanel, setStatsPanel] = useState({ open: false, type: null });
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const videoRef = useRef(null);
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordForm, setPasswordForm] = useState({
@@ -121,29 +120,9 @@ export default function ChefProfile() {
     [viewYear, viewMonth]
   );
 
-  const highlightedDays = useMemo(() => {
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const count = Math.min(5, Math.floor(daysInMonth / 3));
-    const set = new Set();
-    while (set.size < count) {
-      set.add(Math.floor(Math.random() * daysInMonth) + 1);
-    }
-    return set;
-  }, [viewYear, viewMonth]);
 
-  const stats = useMemo(() => {
-    const readyOrders = orders.filter((o) => o.status === "ready");
-    const totalCompleted = readyOrders.length;
-    const orderNames = readyOrders.map((o) => o.id);
-    const menuItems = readyOrders.flatMap((o) => o.items ?? []);
-    const totalItemsCooked = menuItems.length;
-    return {
-      totalCompleted,
-      totalItemsCooked,
-      orderNames,
-      menuItems,
-    };
-  }, [orders]);
+
+
 
   const monthName = new Date(viewYear, viewMonth).toLocaleString("default", {
     month: "long",
@@ -230,21 +209,21 @@ export default function ChefProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-8 text-neutral-900">
+    <div className="min-h-screen bg-[#FFF5F5] px-4 py-8 text-[#2C2C2C]">
       <div className="mx-auto w-full max-w-4xl space-y-8">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2C2C2C]">
             Chef Profile
           </h1>
-          <p className="text-sm text-neutral-500">
-            Your kitchen statistics and calendar
+          <p className="text-sm text-[#999]">
+            Manage your profile and attendance
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm space-y-6">
+          <div className="rounded-xl border border-[#FFB3B3] bg-white p-6 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[#999]">
                 Profile
               </h2>
               <Button
@@ -259,57 +238,49 @@ export default function ChefProfile() {
 
             <div className="space-y-3">
               <div>
-                <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <p className="text-xs font-medium text-[#999] uppercase tracking-wider">
                   Name
                 </p>
-                <p className="text-sm text-neutral-900 mt-0.5">{profile.name}</p>
+                <p className="text-sm text-[#2C2C2C] mt-0.5">{profile.name}</p>
               </div>
               <div>
-                <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                <p className="text-xs font-medium text-[#999] uppercase tracking-wider">
                   Email
                 </p>
-                <p className="text-sm text-neutral-900 mt-0.5">{profile.email}</p>
+                <p className="text-sm text-[#2C2C2C] mt-0.5">{profile.email}</p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-neutral-200">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">
-                Statistics
+            <div className="pt-4 border-t border-[#FFB3B3]">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#999] mb-3">
+                Attendance
               </h3>
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setStatsPanel({ open: true, type: "orders" })}
-                  className="w-full rounded-lg border border-neutral-200 bg-white p-3 text-left hover:bg-neutral-100 hover:border-[#E6501B] transition-colors cursor-pointer"
-                >
-                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Total Completed Orders
+              <button
+                type="button"
+                onClick={() => setScannerOpen(!scannerOpen)}
+                className="w-full rounded-lg bg-[#FF4D4F] hover:bg-[#FF7F7F] text-white p-3 font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <Camera className="h-4 w-4" />
+                {scannerOpen ? "Close Scanner" : "Scan QR Code"}
+              </button>
+              {scannerOpen && (
+                <div className="mt-4 rounded-lg border border-[#FFB3B3] overflow-hidden bg-[#FFF5F5] p-4">
+                  <video
+                    ref={videoRef}
+                    className="w-full rounded-lg"
+                    style={{ maxHeight: "300px" }}
+                  />
+                  <p className="text-xs text-[#999] text-center mt-3">
+                    Point camera at QR code to scan attendance
                   </p>
-                  <p className="text-xl font-semibold text-neutral-900 mt-1">
-                    {stats.totalCompleted}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 mt-1">Click to view order names</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatsPanel({ open: true, type: "items" })}
-                  className="w-full rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-left hover:bg-neutral-100 hover:border-[#E6501B] transition-colors cursor-pointer"
-                >
-                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Total Individual Menu Items Cooked
-                  </p>
-                  <p className="text-xl font-semibold text-neutral-900 mt-1">
-                    {stats.totalItemsCooked}
-                  </p>
-                  <p className="text-[10px] text-neutral-500 mt-1">Click to view item names</p>
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="rounded-xl border border-[#FFB3B3] bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[#999]">
                 Calendar — {monthName} {viewYear}
               </h2>
               <div className="flex items-center gap-1">
@@ -339,7 +310,7 @@ export default function ChefProfile() {
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
                 <div
                   key={d}
-                  className="text-[10px] font-medium text-neutral-500 py-1"
+                  className="text-[10px] font-medium text-[#999] py-1"
                 >
                   {d}
                 </div>
@@ -350,18 +321,13 @@ export default function ChefProfile() {
                   className={`aspect-square flex items-center justify-center rounded-lg text-sm ${
                     !cell.day
                       ? "bg-transparent"
-                      : highlightedDays.has(cell.day)
-                      ? "bg-[#C3110C]/20 text-[#C3110C] font-semibold border border-[#C3110C]/40"
-                      : "bg-neutral-100 text-neutral-700"
+                      : "bg-[#FFF5F5] text-[#2C2C2C]"
                   }`}
                 >
                   {cell.day ?? ""}
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-xs text-neutral-600">
-              <span className="font-medium text-[#C3110C]">Primary colored dates</span> are absent days.
-            </p>
           </div>
         </div>
       </div>
@@ -374,7 +340,7 @@ export default function ChefProfile() {
       >
         <form onSubmit={handleSaveProfile} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="profile-name" className="text-neutral-700">Name</Label>
+            <Label htmlFor="profile-name" className="text-[#2C2C2C]">Name</Label>
             <Input
               id="profile-name"
               value={editForm.name}
@@ -389,21 +355,21 @@ export default function ChefProfile() {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-neutral-200">
+        <div className="mt-6 pt-6 border-t border-[#FFB3B3]">
           <button
             type="button"
             onClick={() => {
               setShowPasswordFields((v) => !v);
               setPasswordError("");
             }}
-            className="text-sm font-medium text-[#C3110C] hover:text-[#E6501B] transition-colors"
+            className="text-sm font-medium text-[#FF4D4F] hover:text-[#FF7F7F] transition-colors"
           >
             {showPasswordFields ? "Cancel Password Update" : "Update Password"}
           </button>
           {showPasswordFields && (
             <form onSubmit={handleSavePassword} className="mt-4 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="current-password" className="text-neutral-700">
+                <Label htmlFor="current-password" className="text-[#2C2C2C]">
                   Current Password
                 </Label>
                 <Input
@@ -417,7 +383,7 @@ export default function ChefProfile() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-neutral-700">
+                <Label htmlFor="new-password" className="text-[#2C2C2C]">
                   New Password
                 </Label>
                 <Input
@@ -431,7 +397,7 @@ export default function ChefProfile() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-neutral-700">
+                <Label htmlFor="confirm-password" className="text-[#2C2C2C]">
                   Confirm Password
                 </Label>
                 <Input
@@ -459,51 +425,7 @@ export default function ChefProfile() {
         )}
       </RightPanel>
 
-      {/* Stats Panel */}
-      <RightPanel
-        open={statsPanel.open}
-        onClose={() => setStatsPanel({ open: false, type: null })}
-        title={
-          statsPanel.type === "orders"
-            ? "Completed Orders"
-            : statsPanel.type === "items"
-            ? "Menu Items Cooked"
-            : ""
-        }
-      >
-        {statsPanel.type === "orders" && (
-          <ul className="space-y-2">
-            {stats.orderNames.length === 0 ? (
-              <p className="text-sm text-neutral-500">No completed orders yet.</p>
-            ) : (
-              stats.orderNames.map((id, i) => (
-                <li
-                  key={`${id}-${i}`}
-                  className="rounded-lg bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-900"
-                >
-                  Order #{id}
-                </li>
-              ))
-            )}
-          </ul>
-        )}
-        {statsPanel.type === "items" && (
-          <ul className="space-y-2">
-            {stats.menuItems.length === 0 ? (
-              <p className="text-sm text-neutral-500">No menu items cooked yet.</p>
-            ) : (
-              stats.menuItems.map((item, i) => (
-                <li
-                  key={`${item}-${i}`}
-                  className="rounded-lg bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-900"
-                >
-                  {item}
-                </li>
-              ))
-            )}
-          </ul>
-        )}
-      </RightPanel>
+
     </div>
   );
 }
