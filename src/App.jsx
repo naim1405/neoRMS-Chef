@@ -6,6 +6,7 @@ import OrdersBoard from "./pages/chef/OrdersBoard.jsx";
 import ChefProfile from "./pages/chef/ChefProfile.jsx";
 import { OrdersProvider } from "./context/OrdersContext.jsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
+import { SocketProvider } from "./context/SocketContext.tsx";
 
 function HomeRedirect() {
   const { isAuthenticated, role } = useAuth();
@@ -22,19 +23,21 @@ function App() {
   return (
     <AuthProvider>
       <OrdersProvider>
-        <Routes>
-          <Route path="/" element={<HomeRedirect />} />
-          <Route path="/login" element={<Login />} />
+        <SocketProvider>
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/login" element={<Login />} />
 
-          <Route element={<RequireChefAuth />}>
-            <Route element={<ChefShell />}>
-              <Route path="/dashboard" element={<OrdersBoard />} />
-              <Route path="/profile" element={<ChefProfile />} />
+            <Route element={<RequireChefAuth />}>
+              <Route element={<ChefShell />}>
+                <Route path="/dashboard" element={<OrdersBoard />} />
+                <Route path="/profile" element={<ChefProfile />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </SocketProvider>
       </OrdersProvider>
     </AuthProvider>
   );
