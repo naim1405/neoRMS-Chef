@@ -1,8 +1,9 @@
 import axios from "axios";
 import { updateTokenFromInterceptor } from "../context/AuthContext";
+import { BACKEND_URL } from "../constants";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: BACKEND_URL,
   withCredentials: true,
 });
 
@@ -25,10 +26,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
@@ -50,7 +48,8 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
+
