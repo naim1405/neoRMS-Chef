@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import AuthCard from "../../components/auth/AuthCard";
 import AuthForm from "../../components/auth/AuthForm";
 import { loginManagement } from "@/services/auth";
+import { getChefProfile } from "@/services/profile";
 import { useAuth } from "../../context/AuthContext";
 
 export default function ChefLogin() {
@@ -19,7 +20,10 @@ export default function ChefLogin() {
 
     try {
       const { accessToken, user } = await loginManagement({ email, password });
-      login(accessToken, user.role, user.fullName || user.name);
+      // Write token to localStorage so the /user/me request interceptor picks it up
+      localStorage.setItem("authToken", accessToken);
+      const me = await getChefProfile();
+      login(accessToken, user.role, me.fullName, me.Chef.tenantId, me.Chef.restaurantId);
       navigate("/dashboard", { replace: true });
     } catch (e) {
       setError(e?.response?.data?.message || e.message || "Login failed");
