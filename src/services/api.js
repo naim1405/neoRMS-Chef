@@ -27,12 +27,19 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await api.post("/auth/refresh-token");
+        const { data } = await api.post("/auth/refresh-token");
+        const newToken = data?.data?.accessToken;
+        if (newToken) {
+          localStorage.setItem("authToken", newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
         return api(originalRequest);
       } catch {
         localStorage.removeItem("authToken");
         localStorage.removeItem("authRole");
         localStorage.removeItem("role");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("chefName");
         window.location.href = "/login";
       }
     }

@@ -5,14 +5,14 @@ import ChefShell from "./components/layout/ChefShell.jsx";
 import OrdersBoard from "./pages/chef/OrdersBoard.jsx";
 import ChefProfile from "./pages/chef/ChefProfile.jsx";
 import { OrdersProvider } from "./context/OrdersContext.jsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 function HomeRedirect() {
-  const token = localStorage.getItem("authToken");
-  const role = localStorage.getItem("authRole");
+  const { isAuthenticated, role } = useAuth();
   const isChef = !role || role === "CHEF";
   return (
     <Navigate
-      to={token && isChef ? "/chef/dashboard" : "/chef/login"}
+      to={isAuthenticated && isChef ? "/dashboard" : "/login"}
       replace
     />
   );
@@ -20,21 +20,23 @@ function HomeRedirect() {
 
 function App() {
   return (
-    <OrdersProvider>
-      <Routes>
-        <Route path="/" element={<HomeRedirect />} />
-        <Route path="/chef/login" element={<Login />} />
+    <AuthProvider>
+      <OrdersProvider>
+        <Routes>
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/login" element={<Login />} />
 
-        <Route element={<RequireChefAuth />}>
-          <Route element={<ChefShell />}>
-            <Route path="/chef/dashboard" element={<OrdersBoard />} />
-            <Route path="/chef/profile" element={<ChefProfile />} />
+          <Route element={<RequireChefAuth />}>
+            <Route element={<ChefShell />}>
+              <Route path="/dashboard" element={<OrdersBoard />} />
+              <Route path="/profile" element={<ChefProfile />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </OrdersProvider>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </OrdersProvider>
+    </AuthProvider>
   );
 }
 

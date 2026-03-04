@@ -10,15 +10,17 @@ import {
   SheetTitle,
   SheetClose,
 } from "../ui-waiter/sheet.jsx";
+import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
-  { label: "Orders Board", to: "/chef/dashboard", icon: LayoutDashboard },
-  { label: "Profile", to: "/chef/profile", icon: User },
+  { label: "Orders Board", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Profile", to: "/profile", icon: User },
 ];
 
 function ChefNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const chefName =
     localStorage.getItem("chefName") ||
     localStorage.getItem("userName") ||
@@ -28,17 +30,12 @@ function ChefNavbar() {
   const isNavItemActive = (to) => location.pathname === to;
 
   const handleLogoClick = () => {
-    navigate("/chef/dashboard");
+    navigate("/dashboard");
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authRole");
-    localStorage.removeItem("role");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("chefName");
-    navigate("/chef/login", { replace: true });
-    window.location.reload();
+    logout();
+    navigate("/login", { replace: true });
   };
 
   const SidebarContent = ({ useSheetClose = false }) => (
