@@ -66,11 +66,12 @@ export default function AuthForm({ onSubmit, loading, error, submitLabel }) {
 
       <button
         type="submit"
-        disabled={loading}
-        style={{ backgroundColor: isFilled ? '#FF4D4F' : '#d1d5db', cursor: isFilled ? 'pointer' : 'default' }}
-        onMouseEnter={e => { if (isFilled) e.currentTarget.style.backgroundColor = '#FF7F7F'; }}
-        onMouseLeave={e => { if (isFilled) e.currentTarget.style.backgroundColor = '#FF4D4F'; }}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-full text-white text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={loading || !isFilled}
+        className={`flex h-11 w-full items-center justify-center gap-2 rounded-full text-white text-sm font-medium transition-all duration-200 ${
+          isFilled
+            ? "bg-[#FF4D4F] hover:bg-[#FF7F7F] active:bg-[#FF4D4F] shadow-md hover:shadow-lg"
+            : "bg-gray-300 cursor-not-allowed"
+        } ${loading ? "opacity-80" : ""}`}
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         <span>{submitLabel}</span>
