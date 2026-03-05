@@ -4,7 +4,7 @@ import { BACKEND_URL } from "../constants";
 
 const api = axios.create({
   baseURL: BACKEND_URL,
-  withCredentials: true,
+  withCredentials: false,
 });
 
 api.interceptors.request.use((config) => {
@@ -30,7 +30,11 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const { data } = await api.post("/auth/refresh-token");
+        const { data } = await api.post(
+          "/auth/refresh-token",
+          undefined,
+          { withCredentials: true },
+        );
         const newToken = data?.data?.accessToken;
         if (newToken) {
           updateTokenFromInterceptor(newToken);
