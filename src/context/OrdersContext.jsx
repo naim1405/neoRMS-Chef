@@ -2,46 +2,15 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 
 const OrdersContext = createContext(null);
 
-const MOCK_ORDERS = [
-  {
-    id: "ORD-001",
-    items: ["Grilled Salmon", "Caesar Salad", "Garlic Bread"],
-    instructions: "Salmon medium-rare, dressing on the side",
-    allergies: "Shellfish",
-    status: "confirmed",
-    inventoryError: false,
-  },
-  {
-    id: "ORD-002",
-    items: ["Margherita Pizza", "French Fries"],
-    instructions: "Extra cheese",
-    allergies: null,
-    status: "cooking",
-    inventoryError: false,
-  },
-  {
-    id: "ORD-003",
-    items: ["Beef Burger", "Onion Rings"],
-    instructions: null,
-    allergies: "Nuts",
-    status: "ready",
-    inventoryError: false,
-  },
-  {
-    id: "ORD-004",
-    items: ["Chicken Pasta", "Minestrone Soup"],
-    instructions: "Pasta al dente",
-    allergies: null,
-    status: "confirmed",
-    inventoryError: false,
-  },
-];
-
 export function OrdersProvider({ children }) {
-  const [orders, setOrders] = useState(MOCK_ORDERS);
+  const [orders, setOrdersState] = useState([]);
+
+  const replaceOrders = useCallback((nextOrders) => {
+    setOrdersState(Array.isArray(nextOrders) ? nextOrders : []);
+  }, []);
 
   const updateOrderStatus = useCallback((orderId, newStatus) => {
-    setOrders((prev) =>
+    setOrdersState((prev) =>
       prev.map((o) =>
         o.id === orderId ? { ...o, status: newStatus } : o
       )
@@ -49,7 +18,7 @@ export function OrdersProvider({ children }) {
   }, []);
 
   const setOrderInventoryError = useCallback((orderId, hasError) => {
-    setOrders((prev) =>
+    setOrdersState((prev) =>
       prev.map((o) =>
         o.id === orderId ? { ...o, inventoryError: hasError } : o
       )
@@ -57,11 +26,23 @@ export function OrdersProvider({ children }) {
   }, []);
 
   const addOrder = useCallback((order) => {
-    setOrders((prev) => [order, ...prev]);
+    if (!order?.id) return;
+
+    setOrdersState((prev) => {
+      const existingIndex = prev.findIndex((o) => o.id === order.id);
+
+      if (existingIndex === -1) {
+        return [order, ...prev];
+      }
+
+      const next = [...prev];
+      next[existingIndex] = { ...next[existingIndex], ...order };
+      return next;
+    });
   }, []);
 
   const clearManualAdjustment = useCallback((orderId) => {
-    setOrders((prev) =>
+    setOrdersState((prev) =>
       prev.map((o) =>
         o.id === orderId ? { ...o, inventoryError: false } : o
       )
@@ -69,11 +50,12 @@ export function OrdersProvider({ children }) {
   }, []);
 
   const removeOrder = useCallback((orderId) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    setOrdersState((prev) => prev.filter((o) => o.id !== orderId));
   }, []);
 
   const value = {
     orders,
+    replaceOrders,
     updateOrderStatus,
     setOrderInventoryError,
     addOrder,

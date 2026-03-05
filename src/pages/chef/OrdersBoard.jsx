@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import OrderCard from "../../components/chef/OrderCard";
 import OrderDetailPanel from "../../components/chef/OrderDetailPanel";
 import { fetchOrders } from "../../services/order"; // adjust path if needed
+import { useOrders } from "../../context/OrdersContext";
 
 const COLUMNS = [
   { key: "CONFIRMED", title: "CONFIRMED" },
@@ -10,7 +11,7 @@ const COLUMNS = [
 ];
 
 export default function OrdersBoard() {
-  const [orders, setOrders] = useState([]);
+  const { orders, replaceOrders } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ export default function OrdersBoard() {
       try {
         setLoading(true);
         const data = await fetchOrders(); // no status filter = all orders
-        setOrders(data);
+        replaceOrders(data);
       } catch (err) {
         console.error("Failed to fetch orders:", err);
         setError("Failed to load orders");
@@ -32,7 +33,7 @@ export default function OrdersBoard() {
     };
 
     loadOrders();
-  }, []);
+  }, [replaceOrders]);
 
   const handleOrderClick = (order) => {
     setSelectedOrder(order);

@@ -24,8 +24,16 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { token, tenantId, user } = useAuth();
-  const { addOrder, updateOrderStatus, removeOrder } = useOrders();
+  const { token, tenantId, user } = useAuth() as {
+    token: string | null;
+    tenantId: string | null;
+    user: { id?: string | null } | null;
+  };
+  const { addOrder, updateOrderStatus, removeOrder } = useOrders() as {
+    addOrder: (order: any) => void;
+    updateOrderStatus: (orderId: string, newStatus: string) => void;
+    removeOrder: (orderId: string) => void;
+  };
   const socketRef = useRef<ReturnType<typeof socketio> | null>(null);
   const [socket, setSocket] = useState<ReturnType<typeof socketio> | null>(
     null,
