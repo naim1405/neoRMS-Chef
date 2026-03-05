@@ -82,14 +82,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("[Socket] SOCKET_ERROR_EVENT:", data);
     });
 
-    // NEW ORDER PLACED - Fetch full order and add to dashboard
-    s.on(ChefSocketEventEnum.ORDER_PLACED_EVENT, async (data) => {
+    // ORDER CONFIRMED - Fetch full order and add to dashboard
+    s.on(ChefSocketEventEnum.ORDER_CONFIRMED_EVENT, async (data) => {
       try {
-        console.log("[Socket] ORDER_PLACED_EVENT received:", data);
+        console.log("[Socket] ORDER_CONFIRMED_EVENT received:", data);
         
         const orderId = data?.orderId || data?.id;
         if (!orderId) {
-          console.error("[Socket] No orderId in ORDER_PLACED_EVENT");
+          console.error("[Socket] No orderId in ORDER_CONFIRMED_EVENT");
           return;
         }
 
@@ -100,7 +100,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         // Add to orders dashboard
         addOrder(fullOrder);
       } catch (error) {
-        console.error("[Socket] Failed to process ORDER_PLACED_EVENT:", error);
+        console.error("[Socket] Failed to process ORDER_CONFIRMED_EVENT:", error);
       }
     });
 
@@ -132,6 +132,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (error) {
         console.error("[Socket] Failed to process ORDER_IN_PROGRESS_EVENT:", error);
       }
+    });
+
+    // ORDER DELIVERED - order moved to DELIVERED status
+    s.on(ChefSocketEventEnum.ORDER_DELIVERED_EVENT, (data) => {
+      console.log("[Socket] ORDER_DELIVERED_EVENT received:", data);
+      alert(`[orderDelivered]\nOrder ID: ${data?.orderId ?? "unknown"}`);
     });
 
     // ORDER CANCELLED - Remove or update the order
