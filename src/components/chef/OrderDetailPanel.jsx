@@ -4,12 +4,14 @@ import { RightPanel } from "../ui/RightPanel";
 import { Button } from "../ui-waiter/button";
 import { Input } from "../ui-waiter/input";
 import { getOrder, updateOrderStatus } from "../../services/order";
+import { useOrders } from "../../context/OrdersContext";
 
 function simulateInventoryDeduction() {
   return Math.random() > 0.7;
 }
 
 export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
+  const { updateOrderStatus: updateBoardOrderStatus, addOrder } = useOrders();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -58,6 +60,7 @@ export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
   const handleStartCooking = async () => {
     if (!order) return;
     await updateOrderStatus(order.id, "PREPARING");
+    updateBoardOrderStatus(order.id, "PREPARING");
     setOrder({ ...order, status: "PREPARING" });
   };
 
@@ -66,6 +69,12 @@ export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
     const success = simulateInventoryDeduction();
 
     await updateOrderStatus(order.id, "READY");
+
+    addOrder({
+      ...order,
+      status: "READY",
+      inventoryError: !success,
+    });
 
     setOrder({
       ...order,
