@@ -69,12 +69,6 @@ export default function OrderCard({ order = {}, onClick }) {
           </p>
         )}
 
-        {/* Inventory Error */}
-        {order.inventoryError && (
-          <p className="text-xs text-red-600 font-medium">
-            Inventory deduction failed
-          </p>
-        )}
       </CardContent>
     </Card>
   );

@@ -17,14 +17,6 @@ export function OrdersProvider({ children }) {
     );
   }, []);
 
-  const setOrderInventoryError = useCallback((orderId, hasError) => {
-    setOrdersState((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { ...o, inventoryError: hasError } : o
-      )
-    );
-  }, []);
-
   const addOrder = useCallback((order) => {
     if (!order?.id) return;
 
@@ -41,14 +33,6 @@ export function OrdersProvider({ children }) {
     });
   }, []);
 
-  const clearManualAdjustment = useCallback((orderId) => {
-    setOrdersState((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { ...o, inventoryError: false } : o
-      )
-    );
-  }, []);
-
   const removeOrder = useCallback((orderId) => {
     setOrdersState((prev) => prev.filter((o) => o.id !== orderId));
   }, []);
@@ -57,9 +41,7 @@ export function OrdersProvider({ children }) {
     orders,
     replaceOrders,
     updateOrderStatus,
-    setOrderInventoryError,
     addOrder,
-    clearManualAdjustment,
     removeOrder,
   };
 

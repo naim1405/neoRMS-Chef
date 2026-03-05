@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { RightPanel } from "../ui/RightPanel";
 import { Button } from "../ui-waiter/button";
-import { Input } from "../ui-waiter/input";
 import { getOrder, updateOrderStatus } from "../../services/order";
 import { useOrders } from "../../context/OrdersContext";
-
-function simulateInventoryDeduction() {
-  return Math.random() > 0.7;
-}
 
 export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
   const { updateOrderStatus: updateBoardOrderStatus, addOrder } = useOrders();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentIngredient, setCurrentIngredient] = useState("");
-  const [currentQuantity, setCurrentQuantity] = useState("");
-  const [deductedIngredients, setDeductedIngredients] = useState([]);
 
   // Fetch individual order when panel opens
   useEffect(() => {
@@ -66,58 +57,18 @@ export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
 
   const handleMarkReady = async () => {
     if (!order) return;
-    const success = simulateInventoryDeduction();
 
     await updateOrderStatus(order.id, "READY");
 
     addOrder({
       ...order,
       status: "READY",
-      inventoryError: !success,
     });
 
     setOrder({
       ...order,
       status: "READY",
-      inventoryError: !success,
     });
-  };
-
-  const handleAddIngredient = (e) => {
-    e.preventDefault();
-    if (!currentIngredient.trim() || !currentQuantity.trim()) {
-      return;
-    }
-
-    // Add ingredient to the list
-    setDeductedIngredients((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: currentIngredient.trim(),
-        quantity: currentQuantity.trim(),
-      },
-    ]);
-
-    // Clear inputs
-    setCurrentIngredient("");
-    setCurrentQuantity("");
-  };
-
-  const handleRemoveIngredient = (id) => {
-    setDeductedIngredients((prev) => prev.filter((ing) => ing.id !== id));
-  };
-
-  const handleSubmitAdjustments = (e) => {
-    e.preventDefault();
-    if (!order || deductedIngredients.length === 0) return;
-
-    // Send all deducted ingredients to server
-    console.log("[OrderDetailPanel] Submitting manual adjustments:", deductedIngredients);
-
-    // Clear the inventory error and ingredients list
-    setOrder({ ...order, inventoryError: false });
-    setDeductedIngredients([]);
   };
 
   return (
@@ -259,77 +210,6 @@ export default function OrderDetailPanel({ order: orderProp, open, onClose }) {
                 <p className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 font-medium">
                   {order.allergies}
                 </p>
-              </section>
-            )}
-
-            {/* Inventory Error */}
-            {order.inventoryError && (
-              <section className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
-                <p className="text-sm font-medium text-red-700">
-                  Inventory deduction failed. Add ingredients to manually adjust:
-                </p>
-                
-                <form onSubmit={handleAddIngredient} className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Ingredient name"
-                      value={currentIngredient}
-                      onChange={(e) => setCurrentIngredient(e.target.value)}
-                      className="text-sm flex-1"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Qty"
-                      value={currentQuantity}
-                      onChange={(e) => setCurrentQuantity(e.target.value)}
-                      className="text-sm w-20"
-                    />
-                    <Button
-                      type="submit"
-                      variant="outline"
-                      size="sm"
-                      disabled={!currentIngredient.trim() || !currentQuantity.trim()}
-                      className="px-3"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </form>
-
-                {/* Added Ingredients List */}
-                {deductedIngredients.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-red-200">
-                    <p className="text-xs font-medium text-red-700">Added Ingredients:</p>
-                    <ul className="space-y-1">
-                      {deductedIngredients.map((ing) => (
-                        <li
-                          key={ing.id}
-                          className="flex items-center justify-between gap-2 rounded px-3 py-2 bg-white border border-red-100"
-                        >
-                          <span className="text-sm text-[#2C2C2C]">
-                            {ing.name} <span className="text-[#999]">x{ing.quantity}</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveIngredient(ing.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {deductedIngredients.length > 0 && (
-                  <Button
-                    onClick={handleSubmitAdjustments}
-                    className="w-full rounded-lg"
-                  >
-                    Submit Adjustments
-                  </Button>
-                )}
               </section>
             )}
 
